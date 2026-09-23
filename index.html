@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Відвідування школи</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef2ff;
+      margin: 0;
+      padding: 30px 15px;
+    }
+
+    .box {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px #0002;
+      text-align: center;
+    }
+
+    h1 {
+      color: #1e3a8a;
+    }
+
+    input,
+    button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px;
+      margin-top: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+
+    input {
+      border: 1px solid #aaa;
+    }
+
+    button {
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+
+    #message {
+      margin-top: 20px;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="box">
+    <h1>Відвідування школи</h1>
+
+    <p>
+      Введи ім’я та прізвище.
+      Потім дозволь доступ до геолокації.
+    </p>
+
+    <input
+      id="name"
+      type="text"
+      placeholder="Ім’я та прізвище"
+    >
+
+    <button onclick="markAttendance()">
+      Відмітити присутність
+    </button>
+
+    <div id="message"></div>
+  </div>
+
+  <script>
+    const SCRIPT_URL =
+      "https://script.google.com/macros/s/AKfycbzwwzup2aRV-ePVFVS1VKXdoxqD5qpaM8hg3JK0OEVhvGKQfgk6hWrOFWqrZf6LoAXp/exec";
+
+    function showMessage(text, color = "black") {
+      const message = document.getElementById("message");
+      message.textContent = text;
+      message.style.color = color;
+    }
+
+    function markAttendance() {
+      const name = document.getElementById("name").value.trim();
+
+      if (!name) {
+        showMessage("Введи ім’я та прізвище.", "red");
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        showMessage(
+          "Цей браузер не підтримує геолокацію.",
+          "red"
+        );
+        return;
+      }
+
+      showMessage(
+        "Отримую місцезнаходження...",
+        "black"
+      );
+
+      navigator.geolocation.getCurrentPosition(
+        sendLocation,
+        locationError,
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    function sendLocation(position) {
+      const name = document.getElementById("name").value.trim();
+
+      const formData = new URLSearchParams();
+
+      formData.append("name", name);
+      formData.append(
+        "latitude",
+        position.coords.latitude
+      );
+      formData.append(
+        "longitude",
+        position.coords.longitude
+      );
+
+      showMessage("Надсилаю дані...", "black");
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        body: formData
+      })
+      .then(() => {
+        showMessage(
+          "Дані надіслано. Перевір таблицю через кілька секунд.",
+          "green"
+        );
+      })
+      .catch(() => {
+        showMessage(
+          "Не вдалося надіслати дані.",
+          "red"
+        );
+      });
+    }
+
+    function locationError(error) {
+      if (error.code === 1) {
+        showMessage(
+          "Доступ до геолокації заборонено.",
+          "red"
+        );
+      } else if (error.code === 2) {
+        showMessage(
+          "Не вдалося визначити місцезнаходження.",
+          "red"
+        );
+      } else {
+        showMessage(
+          "Час очікування геолокації минув.",
+          "red"
+        );
+      }
+    }
+  </script>
+</body>
+</html>
